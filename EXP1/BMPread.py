@@ -61,6 +61,7 @@ class Bimap:
                         self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][0] = s[j*3+2]
                         self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][1] = s[j*3+1]
                         self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][2] = s[j*3]
+            self.rgb = self.bfimage/255
     def R_G_B(self):
         R = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3),dtype=np.uint8)
         G = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3),dtype=np.uint8)
@@ -79,6 +80,45 @@ class Bimap:
                 self.YIQ[i][j] = np.dot(T_matrix,self.bfimage[i][j])
         
         return self.YIQ[:,:,0],self.YIQ[:,:,1],self.YIQ[:,:,2]
+    def H_S_I(self):
+        self.HSI = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3))
+        
+        self.HSI[:,:,2] = np.sum(self.rgb,axis=2)/3
+        rgbmin = np.min(self.rgb,axis=2)
+        rgbsum = np.sum(self.rgb,axis=2)
+        den = np.sqrt((self.rgb[:,:,0] - self.rgb[:,:,1])**2 + (self.rgb[:,:,0]-self.rgb[:,:,2])*(self.rgb[:,:,1]-self.rgb[:,:,2]))
+        dd = 0.5*(2*self.rgb[:,:,0]-self.rgb[:,:,1]-self.rgb[:,:,2])
+        
+
+
+                
+        for i in range(self.Bitmapifoheader.biHeight):
+            for j in range(self.Bitmapifoheader.biWidth):
+                if den[i,j] <= 0:
+                    self.HSI[i,j,0] = 0
+                elif den[i,j] > 0 and self.rgb[i,j,1] >= self.rgb[i,j,2]:
+                    self.HSI[i,j,0] = np.arccos(int(dd[i,j]/den[i,j]))
+                elif den[i,j] > 0 and self.rgb[i,j,1] < self.rgb[i,j,2]:
+                    self.HSI[i,j,0] = 2*np.pi - np.arccos(int(dd[i,j]/den[i,j]))
+        for i in range(self.Bitmapifoheader.biHeight):
+            for j in range(self.Bitmapifoheader.biWidth):
+                if self.HSI[i,j,2] == 0:
+                    self.HSI[i,j,1] = 0
+                else:
+                    self.HSI[i,j,1] = 1 - (3*rgbmin[i,j]/rgbsum[i,j])
+        return self.HSI
+    def X_Y_Z(self):
+        T_matrix = [
+            [0.490,0.310,0.200],
+            [0.177,0.813,0.011],
+            [0.,0.010,0.990]
+        ]
+        self.rgb
+        self.XYZ = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3))
+        for i in range(self.Bitmapifoheader.biHeight):
+            for j in range(self.Bitmapifoheader.biWidth):
+                self.XYZ[i][j] = np.dot(T_matrix,self.rgb[i][j])
+        return self.XYZ
 def showimage(title,img,cmap = None):
     plt.figure(title) # 图像窗口名称
     plt.imshow(img,cmap=cmap)
@@ -89,12 +129,14 @@ def showimage(title,img,cmap = None):
 if __name__ == "__main__":
     
     bitmap = Bimap('/Users/zhanghuicong/CODE/DigitalImageProcess/EXP1/Marshmello.bmp')
-    Y,I,Q = bitmap.Y_I_Q()
-    Y = Y.astype(np.uint8)
-    I = I.astype(np.uint8)
-    Q = Q.astype(np.uint8)
-
+    
+    HSI= bitmap.H_S_I()
+    H = HSI[:,:,0]
+    H = H/(2*np.pi)
+    I = HSI[:,:,2]
+    S = HSI[:,:,1]
+    X,Y,Z = bitmap.X_Y_Z()[:,:,0],bitmap.X_Y_Z()[:,:,1],bitmap.X_Y_Z()[:,:,2]
+    cv2.imshow('X',X)
     cv2.imshow('Y',Y)
-    cv2.imshow('I',I)
-    cv2.imshow('Q',Q)
+    cv2.imshow('Z',Z)
     cv2.waitKey(0)
