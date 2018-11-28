@@ -2,15 +2,18 @@ import  struct
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 class tagBITMAPFILEHEADER:
     def __init__(self,bfType,bfSize,bfReserved1,bfReserved2,bfOffBits):
-        self.bfType = bfType
-        self.bfSize = bfSize
-        self.bfReserved1 = bfReserved1
-        self.bfReserved2 = bfReserved2
-        self.bfOffBits = bfOffBits
+        self.bfType = bfType #文件类型 
+        self.bfSize = bfSize #位图文件的大小
+        self.bfReserved1 = bfReserved1 #位图文件保留字1，必须为0
+        self.bfReserved2 = bfReserved2 #位图文件保留字2，也必须是0
+        self.bfOffBits = bfOffBits #位图数据的起始位置，文件头的偏移量，单位为字节
 class tagBITMAPINFOHEADER:
-    def __init__(self,biSize,biWidth,biHeight,biPlanes,biBitCount,biCompression,biSizeImage,biXPelsPerMeter,biYPelsPerMeter,biClrUsed,biClrImportant):
+    def __init__(self,biSize,biWidth,biHeight,biPlanes,
+        biBitCount,biCompression,biSizeImage,biXPelsPerMeter,
+        biYPelsPerMeter,biClrUsed,biClrImportant):
         self.biSize = biSize #本结构所占用字节数
         self.biWidth = biWidth #位图的宽度(不包括0填充的像素)
         self.biHeight = biHeight #位图的高度(不包括0填充的像素)
@@ -49,19 +52,56 @@ class Bimap:
                 biClrUsed = bit2str[9],
                 biClrImportant = bit2str[10]
             )
+            print ("文件类型:", self.Bitfileheader.bfType)
+            print ("位图大小:", self.Bitfileheader.bfSize, "字节")
+            print ("偏移量:", self.Bitfileheader.bfOffBits, "字节")
+
+            print ("位图信息头大小:",self.Bitmapifoheader.biSize, "字节")
+            print ("宽:", self.Bitmapifoheader.biWidth)
+            print ("高:", self.Bitmapifoheader.biHeight)
+            print (self.Bitmapifoheader.biBitCount, "位图")
+            print ("压缩类型:", self.Bitmapifoheader.biCompression)
+            print ("图像大小:", self.Bitmapifoheader.biSizeImage, "字节")
+            print ("水平分辨率:", self.Bitmapifoheader.biXPelsPerMeter, "像素/米")
+            print ("垂直分辨率:", self.Bitmapifoheader.biYPelsPerMeter, "像素/米")
+            print ("使用颜色索引数:", self.Bitmapifoheader.biClrUsed, "(为0的话，则说明使用所有调色板项)")
+            print ("有重要影响的颜色索引数:", self.Bitmapifoheader.biClrImportant, "(如果是0，表示都重要)")
+            print ("是否有索引表:", "无" if self.Bitfileheader.bfOffBits == 54 else "有")
+            print ("索引表大小:", self.Bitfileheader.bfOffBits - 54)
+            
+            RowSize = 4*self.Bitmapifoheader.biBitCount*self.Bitmapifoheader.biWidth/32
+            self.bfimage = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3),dtype=np.uint8)
+            if self.Bitmapifoheader.biBitCount >= 24:
             # print(int(self.Bitfileheader.bfSize) - int(Bitmapifoheader.biSizeImage))
             # print(Bitmapifoheader.biSizeImage)
-            RowSize = 4*self.Bitmapifoheader.biBitCount*self.Bitmapifoheader.biWidth/32
+                
+                
+                # print(s)
+                
+                for i in range(self.Bitmapifoheader.biHeight):
+                    s = f.read(int(RowSize))
+                    for j in range(self.Bitmapifoheader.biWidth):
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][0] = s[j*3+2]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][1] = s[j*3+1]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][2] = s[j*3]
+                self.rgb = self.bfimage/255
+            else:
+                self.color_list = np.zeros(shape=((self.Bitfileheader.bfOffBits - 54)/4,4),dtype=np.uint8)
+                for i in range((self.Bitfileheader.bfOffBits - 54)/4):
+                    s = f.read(4)
+                    self.color_list[i][0] = s[0]
+                    self.color_list[i][1] = s[1]
+                    self.color_list[i][2] = s[2]
+                    self.color_list[i][3] = s[3]
+                for i in range(self.Bitmapifoheader.biHeight):
+                    s = f.read(int(RowSize))
+                    for j in range(self.Bitmapifoheader.biWidth):
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][0] = self.color_lists[j][2]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][1] = self.color_lists[j][1]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][2] = self.color_lists[j][0]
+                self.rgb = self.bfimage/255
+            print("(25,25)像素值",self.bfimage[25,25])
             
-            # print(s)
-            self.bfimage = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3),dtype=np.uint8)
-            for i in range(self.Bitmapifoheader.biHeight):
-                s = f.read(int(RowSize))
-                for j in range(self.Bitmapifoheader.biWidth):
-                        self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][0] = s[j*3+2]
-                        self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][1] = s[j*3+1]
-                        self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][2] = s[j*3]
-            self.rgb = self.bfimage/255
     def R_G_B(self):
         R = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3),dtype=np.uint8)
         G = np.zeros(shape=(self.Bitmapifoheader.biHeight,self.Bitmapifoheader.biWidth,3),dtype=np.uint8)
@@ -119,18 +159,37 @@ class Bimap:
             for j in range(self.Bitmapifoheader.biWidth):
                 self.XYZ[i][j] = np.dot(T_matrix,self.rgb[i][j])
         return self.XYZ
-def showimage(title,img,cmap = None):
-    plt.figure(title) # 图像窗口名称
-    plt.imshow(img,cmap=cmap)
-    plt.axis('on') # 关掉坐标轴为 off
-    plt.title(title) # 图像题目
+def showimage(imgs,multi=None,titles='origin',cmap=None):
+    plt.figure(1)
+    if multi == None:
+        plt.title(titles)
+        plt.imshow(imgs)
+    else:
+            plt.subplot2grid((2,3), (0,1))
+            plt.title(titles[0])
+            plt.imshow(imgs[0])
+            plt.subplot2grid((2,3), (1,0))
+            plt.title(titles[1])
+            plt.imshow(imgs[1],cmap=cmap)
+
+            plt.subplot2grid((2,3), (1,1))
+            plt.title(titles[2])
+            plt.imshow(imgs[2],cmap=cmap)
+
+            plt.subplot2grid((2,3), (1,2))
+            plt.title(titles[3])
+            plt.imshow(imgs[3],cmap=cmap)
+
+
     plt.show()
 
 if __name__ == "__main__":
     
-    bitmap = Bimap('/Users/zhanghuicong/CODE/DigitalImageProcess/EXP1/Marshmello.bmp')
-    
-    HSI= bitmap.H_S_I()
+    bitmap = Bimap('/Users/zhanghuicong/CODE/DigitalImageProcess/EXP1/LENA.BMP')
+    XYZ = bitmap.X_Y_Z()
+    showimage([bitmap.bfimage,XYZ[:,:,0],XYZ[:,:,1],XYZ[:,:,2]],multi=1,titles=["origin","X","Y","Z"],cmap='gray')
+    # showimage('sda',bitmap.bfimage)
+    """ HSI= bitmap.H_S_I()
     H = HSI[:,:,0]
     H = H/(2*np.pi)
     I = HSI[:,:,2]
@@ -139,4 +198,4 @@ if __name__ == "__main__":
     cv2.imshow('X',X)
     cv2.imshow('Y',Y)
     cv2.imshow('Z',Z)
-    cv2.waitKey(0)
+    cv2.waitKey(0) """
