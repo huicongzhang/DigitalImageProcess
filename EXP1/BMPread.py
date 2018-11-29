@@ -159,6 +159,17 @@ class Bimap:
             for j in range(self.Bitmapifoheader.biWidth):
                 self.XYZ[i][j] = np.dot(T_matrix,self.rgb[i][j])
         return self.XYZ
+    def Y_Cb_Cr(self):
+         Transform_matrix = [
+             [0.299, 0.587, 0.114],
+             [0.500, -0.4187, -0.0813],
+             [-0.1687, -0.3313, 0.500]
+         ]
+         self.Y_Cb_Cr=np.zeros(shape=(self.Bitmapifoheader.biHeight, self.Bitmapifoheader.biWidth, 3))
+         for i in range(self.Bitmapifoheader.biHeight):
+             for j in range(self.Bitmapifoheader.biWidth):
+                 self.Y_Cb_Cr[i][j] = np.dot(Transform_matrix, self.rgb[i][j])
+         return self.Y_Cb_Cr
 def showimage(imgs,multi=None,titles='origin',cmap=None):
     plt.figure(1)
     if multi == None:
@@ -186,8 +197,10 @@ def showimage(imgs,multi=None,titles='origin',cmap=None):
 if __name__ == "__main__":
     
     bitmap = Bimap('/Users/zhanghuicong/CODE/DigitalImageProcess/EXP1/LENA.BMP')
-    XYZ = bitmap.X_Y_Z()
-    showimage([bitmap.bfimage,XYZ[:,:,0],XYZ[:,:,1],XYZ[:,:,2]],multi=1,titles=["origin","X","Y","Z"],cmap='gray')
+    Y_Cb_Cr = bitmap.Y_Cb_Cr()
+    showimage([bitmap.bfimage,Y_Cb_Cr[:,:,0],Y_Cb_Cr[:,:,1],Y_Cb_Cr[:,:,2]],multi=1,titles=["origin","Y","Cb","Cr"],cmap='gray')
+    # XYZ = bitmap.X_Y_Z()
+    # showimage([bitmap.bfimage,XYZ[:,:,0],XYZ[:,:,1],XYZ[:,:,2]],multi=1,titles=["origin","X","Y","Z"],cmap='gray')
     # showimage('sda',bitmap.bfimage)
     """ HSI= bitmap.H_S_I()
     H = HSI[:,:,0]
