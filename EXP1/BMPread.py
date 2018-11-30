@@ -96,9 +96,9 @@ class Bimap:
                 for i in range(self.Bitmapifoheader.biHeight):
                     s = f.read(int(RowSize))
                     for j in range(self.Bitmapifoheader.biWidth):
-                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][0] = self.color_lists[j][2]
-                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][1] = self.color_lists[j][1]
-                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][2] = self.color_lists[j][0]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][0] = self.color_lists[s[j]][2]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][1] = self.color_lists[s[j]][1]
+                            self.bfimage[self.Bitmapifoheader.biHeight-i-1][j][2] = self.color_lists[s[j]][0]
                 self.rgb = self.bfimage/255
             print("(25,25)像素值",self.bfimage[25,25])
             
