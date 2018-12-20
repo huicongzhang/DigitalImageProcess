@@ -53,27 +53,59 @@ def showimage(imgs,multi=None,titles='origin',cmap=None):
 def means_Blur(src,kernel_size):
     src_cpy = src.copy()
     padding = int((kernel_size-1)/2)
-    means_kernel = np.ones((kernel_size,kernel_size))/9
+    means_kernel = np.ones((kernel_size,kernel_size))/(kernel_size*kernel_size)
     rows = src.shape[0]+padding
     cols = src.shape[1]+padding
     img = np.zeros((rows,cols,3))
     img[padding:rows,padding:cols] = src
-    for i in range(src.shape[0]):
-        for j in range(src.shape[1]):
-            ri = i+padding
-            rj = j+padding
+    print(img.shape)
+    i = 0
+    j = 0
+    for ri in range(img.shape[0]-kernel_size):
+        j = 0
+        for rj in range(img.shape[1]-kernel_size):
             for k in range(3):
-                img[ri-padding:ri+padding,rj-padding:rj+padding,k]*means_kernel
-                # src_cpy[i][j][k] = np.sum(np.sum(img[ri-padding:ri+padding,rj-padding:rj+padding,k]*means_kernel,axis=0),axis=1)
+                # iii = img[ri-padding:ri+padding+1,rj-padding:rj+padding+1,k]*means_kernel
+                # iii = np.sum(img[ri-padding:ri+padding+1,rj-padding:rj+padding+1,k]*means_kernel,axis=0)
+                # print(iii.shape)
+                
+                # print(img[ri:ri+kernel_size,rj:rj+kernel_size,k].shape)
+                # print(rj+padding+1)
+                
+                src_cpy[i][j][k] = np.sum(np.sum(img[ri:ri+kernel_size,rj:rj+kernel_size,k]*means_kernel,axis=0),axis=0)
+            # print(j)
+            j += 1
+            # print(rj)
+        i += 1
     return src_cpy
-if __name__ == "__main__":
-    bitmap = Bimap('/Users/zhanghuicong/CODE/DigitalImageProcess/EXP3/lena.bmp')
-    img = bitmap.rgb
-    # GNoiseImg = GaussianNoise(img,0,0.1,0.2)
-    # SNoiseImg = PepperandSalt(img,0.2)
-    img = means_Blur(img,3)
+def get_H(img):
+    th = int(img.shape[0]*img.shape[1]/2) + 1
+    H = np.zeros((img.shape[2],256))
+    med = np.zeros((img.shape[2]))
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            for k in range(img.shape[2]):
+                H[k,img[i][j][k]] += 1
+    print(H)
+    for k in range(img.shape[2]):
+        tt = np.where(H[k,:] == th)
+        med[k] = tt
+    return H,med
+if __name__ == "__main__": 
+    bitmap = Bimap('/home/zhc/CODE/DigitalImageProcess/EXP3/lena.bmp')
+    # img = bitmap.rgb
+    """ GNoiseImg = GaussianNoise(img,0,0.1,0.2)
+    SNoiseImg = PepperandSalt(img,0.2)
+    img = means_Blur(SNoiseImg,5)
     plt.title('sa')
     plt.imshow(img)
-    plt.show()
+    plt.show() """
+    img = [
+        [1,2,3],[4,5,6],[7,8,9]
+    ]
+    img = np.array(img)
+    img = np.reshape(img,(3,3,1))
+    print(img.shape)
+    H,med = get_H(img)
     # showimage([img,GNoiseImg,SNoiseImg],multi=1,titles=['source','Gaussian','PepperandSalt'])
     
